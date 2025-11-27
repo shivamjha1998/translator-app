@@ -1,13 +1,13 @@
+import { RecordButton } from '@/src/components/RecordButton';
 import { useVoiceTranslator } from '@/src/hooks/useVoiceTranslator';
 import React from 'react';
 import {
-  ActivityIndicator,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function App() {
   const {
@@ -20,13 +20,6 @@ export default function App() {
     direction,
     setDirection,
   } = useVoiceTranslator();
-
-  const label =
-    status === 'recording'
-      ? 'Tap to stop'
-      : isBusy
-      ? 'Processing...'
-      : 'Tap to speak';
 
   const directionLabel =
     direction === 'auto'
@@ -52,22 +45,11 @@ export default function App() {
 
         <Text style={styles.status}>Status: {status}</Text>
 
-        <Pressable
-          onPress={toggleRecording}
-          disabled={isBusy}
-          style={({ pressed }) => [
-            styles.button,
-            isRecording && styles.buttonRecording,
-            isBusy && styles.buttonDisabled,
-            pressed && { opacity: 0.85 },
-          ]}
-        >
-          {isBusy ? (
-            <ActivityIndicator />
-          ) : (
-            <Text style={styles.buttonText}>{label}</Text>
-          )}
-        </Pressable>
+        <RecordButton
+            isRecording={isRecording}
+            isBusy={isBusy}
+            onPress={toggleRecording}
+        />
 
         <View style={styles.block}>
           <Text style={styles.label}>Original:</Text>
@@ -120,28 +102,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#9ca3af',
     marginBottom: 12,
-  },
-  button: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    borderWidth: 4,
-    borderColor: '#4f46e5',
-    backgroundColor: '#312e81',
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  buttonRecording: {
-    backgroundColor: '#b91c1c',
-    borderColor: '#fecaca',
-  },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: {
-    color: '#e5e7eb',
-    fontSize: 18,
-    fontWeight: '600',
   },
   block: {
     marginTop: 8,
