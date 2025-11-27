@@ -5,7 +5,9 @@ import {
   VoiceTranslatorStatus,
 } from '@/src/services/voice-translator.service';
 import { AudioModule, RecordingPresets, useAudioRecorder } from 'expo-audio';
+import { File } from 'expo-file-system';
 import { useEffect, useState } from 'react';
+import { AppState } from 'react-native';
 
 type ExtendedStatus = VoiceTranslatorStatus | 'error';
 
@@ -36,9 +38,23 @@ export function useVoiceTranslator() {
     if (isRecording) {
       setStatus('recording');
     } else if (status === 'recording') {
-
+      // Recorder is stopped
     }
   }, [isRecording]);
+
+  // Listen for AppState changes to reset state when backgrounded
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (nextAppState === 'background') {
+        setLastResult(null);
+        setStatus('idle');
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   const isBusy = ['transcribing', 'translating', 'speaking'].includes(
     status as VoiceTranslatorStatus,
@@ -64,6 +80,17 @@ export function useVoiceTranslator() {
 
         setLastResult(result);
         setStatus('idle');
+
+        // Cleanup: Delete the recording file after processing
+        try {
+            const file = new File(uri);
+            if (file.exists) {
+                file.delete();
+            }
+        } catch (cleanupErr) {
+            console.warn("Failed to cleanup recording file", cleanupErr);
+        }
+
       } else if (!isBusy) {
         // START RECORDING
         setLastResult(null);
