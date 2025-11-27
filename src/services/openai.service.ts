@@ -1,8 +1,10 @@
-const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API;
-const OPENAI_BASE_URL = 'https://api.openai.com/v1';
+import { API_CONFIG } from '@/src/config/api.config';
+
+const OPENAI_API_KEY = API_CONFIG.OPENAI.API_KEY;
+const OPENAI_BASE_URL = API_CONFIG.OPENAI.BASE_URL;
 
 if (!OPENAI_API_KEY) {
-  console.warn('Missing OPENAI_API_KEY');
+  console.warn('Missing OPENAI_API_KEY in environment variables');
 }
 
 export type TranslationDirection = 'auto' | 'en-ja' | 'ja-en';
@@ -23,7 +25,6 @@ class OpenAIService {
         case 'en-ja':
           return `
 You are an English→Japanese translator.
-
 - The user input is English.
 - Output natural, conversational Japanese.
 - Also output a romanized version if useful.
@@ -33,7 +34,6 @@ You are an English→Japanese translator.
         case 'ja-en':
           return `
 You are a Japanese→English translator.
-
 - The user input is Japanese.
 - Output natural, conversational English.
 - Romanized can be null.
@@ -44,7 +44,6 @@ You are a Japanese→English translator.
         default:
           return `
 You are an English–Japanese conversational translator.
-
 Rules:
 - Detect if the user's input is mainly English or Japanese.
 - If English, translate into natural Japanese.
@@ -63,7 +62,7 @@ Rules:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: API_CONFIG.OPENAI.MODEL,
         messages: [
           { role: 'system', content: systemInstruction },
           { role: 'user', content: text },
@@ -72,6 +71,7 @@ Rules:
       }),
     });
 
+    // Error handling logic
     if (!res.ok) {
       const textRes = await res.text();
       console.error('OpenAI translate error:', textRes);
@@ -85,43 +85,20 @@ Rules:
       throw new Error('No translation returned from OpenAI');
     }
 
-    // Robust parsing with fallbacks
     try {
       const parsed = JSON.parse(content);
+      const inputLang: 'en' | 'ja' = parsed.inputLang === 'ja' ? 'ja' : 'en';
+      const translated: string = parsed.translated ?? parsed.translation ?? parsed.text ?? '';
+      const romanized: string | null = parsed.romanized ?? null;
 
-      const inputLang: 'en' | 'ja' =
-        parsed.inputLang === 'ja' ? 'ja' : 'en';
-
-      const translated: string =
-        parsed.translated ??
-        parsed.translation ??
-        parsed.text ??
-        '';
-
-      const romanized: string | null =
-        parsed.romanized ?? null;
-
-      // Final safety: never return empty translated
       if (!translated || typeof translated !== 'string') {
-        // Fall back to entire content string
-        return {
-          inputLang,
-          translated: content,
-          romanized: null,
-        };
+        return { inputLang, translated: content, romanized: null };
       }
-
       return { inputLang, translated, romanized };
     } catch (err) {
       console.error('Failed to parse translation JSON, using raw content:', content);
-      // If JSON.parse fails, treat whole response as translation text
       return {
-        inputLang:
-          direction === 'ja-en'
-            ? 'ja'
-            : direction === 'en-ja'
-            ? 'en'
-            : 'en', // default guess in auto mode
+        inputLang: direction === 'ja-en' ? 'ja' : direction === 'en-ja' ? 'en' : 'en',
         translated: content,
         romanized: null,
       };

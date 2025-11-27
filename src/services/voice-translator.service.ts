@@ -18,39 +18,31 @@ export interface VoiceTranslationResult {
 }
 
 class VoiceTranslatorService {
-  async startRecording() {
-    await audioService.startRecording();
-  }
-
-  async stopAndTranslate(
+  async translateAudio(
+    audioUri: string,
     direction: TranslationDirection = 'auto',
   ): Promise<VoiceTranslationResult> {
-    // 1. Stop recording & get URI
-    const audioUri = await audioService.stopRecording();
-    if (!audioUri) throw new Error('No audio recorded');
 
-    // 2. Speech → Text (ElevenLabs STT)
+    // 1. Speech → Text (ElevenLabs STT)
     const transcript = await elevenLabsService.transcribeAudio(audioUri);
 
-    // 3. Text → Text (OpenAI translation, with direction)
+    // 2. Text → Text (OpenAI translation)
     const translation = await openAIService.translateText(transcript, direction);
 
-    // 4. Decide target language for TTS
+    // 3. Decide target language for TTS
     const targetLang: ElevenLang = (() => {
       if (direction === 'en-ja') return 'ja';
       if (direction === 'ja-en') return 'en';
-
-      // auto: flip based on input
       return translation.inputLang === 'en' ? 'ja' : 'en';
     })();
 
-    // 5. Text → Speech (ElevenLabs TTS)
+    // 4. Text → Speech (ElevenLabs TTS)
     const ttsUri = await elevenLabsService.tts(
       translation.translated,
       targetLang,
     );
 
-    // 6. Play result audio
+    // 5. Play result audio
     await audioService.playSound(ttsUri);
 
     return {

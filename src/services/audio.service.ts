@@ -1,80 +1,37 @@
-// src/services/audio.service.ts
-import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
+import { AudioModule, AudioPlayer, createAudioPlayer } from 'expo-audio';
 
 class AudioService {
-  private recording: Audio.Recording | null = null;
-  private sound: Audio.Sound | null = null;
+  private player: AudioPlayer | null = null;
 
-  async startRecording() {
-    // Ask for mic permission
-    const { status } = await Audio.requestPermissionsAsync();
-    if (status !== 'granted') {
-      throw new Error('Microphone permission not granted');
-    }
-
-    // Configure audio mode
-    await Audio.setAudioModeAsync({
-      allowsRecordingIOS: true,
-      playsInSilentModeIOS: true,
-      staysActiveInBackground: false,
-      interruptionModeIOS: InterruptionModeIOS.DoNotMix,
-      shouldDuckAndroid: true,
-      interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
-      playThroughEarpieceAndroid: false,
-    });
-
-    // Start recording
-    const recording = new Audio.Recording();
-    await recording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-    await recording.startAsync();
-    this.recording = recording;
-  }
-
-  async stopRecording(): Promise<string | null> {
-    if (!this.recording) return null;
-
-    try {
-      await this.recording.stopAndUnloadAsync();
-      const uri = this.recording.getURI();
-      this.recording = null;
-
-      // Reset audio mode
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
-        shouldDuckAndroid: true,
-        interruptionModeIOS: InterruptionModeIOS.DoNotMix,
-        interruptionModeAndroid: InterruptionModeAndroid.DoNotMix,
-        playThroughEarpieceAndroid: false,
-      });
-
-      return uri ?? null;
-    } catch (err) {
-      console.error('stopRecording error', err);
-      this.recording = null;
-      return null;
-    }
+  constructor() {
+    AudioModule.setAudioModeAsync({
+      playsInSilentMode: true,
+      allowsRecording: true,
+      shouldPlayInBackground: false,
+    }).catch(console.error);
   }
 
   async playSound(uri: string) {
-    // stop old sound
-    if (this.sound) {
-      await this.sound.unloadAsync();
-      this.sound = null;
+    // Cleanup previous recording if it exists
+    if (this.player) {
+      this.player.pause();
+      this.player.remove();
+      this.player = null;
     }
 
-    const { sound } = await Audio.Sound.createAsync({ uri });
-    this.sound = sound;
+    // Create a new player with the URI
+    this.player = createAudioPlayer({ uri });
 
-    await sound.playAsync();
-    sound.setOnPlaybackStatusUpdate((status) => {
-      if (!status.isLoaded) return;
-      if (status.didJustFinish) {
-        sound.unloadAsync();
-        this.sound = null;
-      }
-    });
+    // Play the audio
+    this.player.play();
+  }
+
+  // Helper to stop playback if needed
+  stopPlayback() {
+    if (this.player) {
+      this.player.pause();
+      this.player.seekTo(0);
+    }
   }
 }
 
