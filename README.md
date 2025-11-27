@@ -1,50 +1,78 @@
-# Welcome to your Expo app 👋
+# **EN ⇄ JA Voice Translator App**
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A simple voice translation application built with **React Native** and **Expo**. This app allows users to translate speech in English or Japanese, translates it using **OpenAI**, and plays back the translation using **ElevenLabs** realistic text-to-speech synthesis.
 
-## Get started
+## **🚀 Features**
 
-1. Install dependencies
+* **Voice-to-Voice Translation:** seamless translation between English and Japanese.
+* **Auto-Detection:** Automatically detects the input language or allows manual direction selection (EN → JA, JA → EN).
+* **High-Quality Audio:** Uses expo-audio for high-fidelity recording and playback.
+* **AI-Powered Translation:** Leverages OpenAI's GPT-4o-mini model for natural, conversational translations.
+* **Realistic TTS:** Utilizes ElevenLabs for high-quality voice synthesis in the target language.
+* **Romanization Support:** Displays Romanized text (Romaji) for Japanese translations to aid pronunciation.
+* **Dark/Light Mode:** Fully adaptive UI that respects system theme settings.
 
-   ```bash
+## **🛠 Tech Stack**
+
+* **Framework:** [React Native](https://reactnative.dev/) with [Expo](https://expo.dev/) (SDK 54\)
+* **Routing:** [Expo Router](https://docs.expo.dev/router/introduction/)
+* **Audio:** [expo-audio](https://docs.expo.dev/versions/latest/sdk/audio/) for recording and playback
+* **File System:** [expo-file-system](https://docs.expo.dev/versions/latest/sdk/filesystem/) for managing audio files
+* **AI Services:**
+  * [OpenAI API](https://openai.com/) (Translation)
+  * [ElevenLabs API](https://elevenlabs.io/) (Text-to-Speech & Speech-to-Text)
+* **UI:** Custom themed components with react-native-reanimated for smooth interactions.
+
+## **📋 Prerequisites**
+
+Before you begin, ensure you have the following:
+
+* **Node.js** (LTS version recommended)
+* **Expo Go** app installed on your physical device (Android/iOS) OR an Android Emulator/iOS Simulator.
+* **API Keys:**
+  * OpenAI API Key
+  * ElevenLabs API Key
+
+## **⚙️ Installation & Setup**
+
+1. **Clone the repository:**
+   ```
+   git clone https://github.com/shivamjha1998/translator-app
+   cd translator-app
+   ```
+
+2. **Install dependencies:**
+   ```
    npm install
    ```
 
-2. Start the app
+3. Configure Environment Variables:
+   Create a .env file in the root directory of your project. You can copy the structure from a .env.example if one exists, or simply add the following keys:
+   ```
+   EXPO\_PUBLIC\_OPENAI\_API=your\_openai\_api\_key\_here
+   EXPO\_PUBLIC\_ELEVENLABS\_API=your\_elevenlabs\_api\_key\_here
+   ```
+   **Note:** This project uses expo-env and process.env.EXPO\_PUBLIC\_... variables, which are embedded into the app at build time. **Do not commit your real API keys to version control.**
 
-   ```bash
+## **🏃‍♂️ Running the App**
+
+Start the Expo development server:
+
+   ```
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+* **Run on Android:** Press a in the terminal (requires Emulator or connected device).
+* **Run on iOS:** Press i in the terminal (requires Simulator or MacOS).
+* **Run on Web:** Press w in the terminal.
+* **Run on Physical Device:** Scan the QR code displayed in the terminal using the **Expo Go** app.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## **🛡️ Troubleshooting**
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+* **Microphone Permissions:** If recording doesn't start, ensure you have granted microphone permissions to the Expo Go app on your device settings.
+* **API Errors:** Check your console logs. If you see 401 errors, verify your API keys in the .env file are correct and have valid credits.
+* **Audio Issues:** Ensure your volume is up and your device is not in silent mode (depending on system settings, audio might be muted).
 
-## Get a fresh project
+## **📄 License**
 
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+This project is licensed under the MIT License.
