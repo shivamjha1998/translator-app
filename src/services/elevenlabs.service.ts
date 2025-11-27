@@ -79,12 +79,15 @@ class ElevenLabsService {
     const arrayBuffer = await res.arrayBuffer();
     const uint8 = new Uint8Array(arrayBuffer);
 
-    // 2. Create a File instance in the cache directory
-    const filename = `tts-${targetLang}-${Date.now()}.mp3`;
+    // 2. Use a fixed filename to prevent cache accumulation
+    const filename = `tts_cache.mp3`;
     const file = new File(Paths.cache, filename);
 
-    // 3. Create the file and write the binary data directly
+    // 3. Clean up previous file if it exists and write new data
     try {
+        if (file.exists) {
+            file.delete();
+        }
         file.create();
         file.write(uint8);
     } catch (error) {
