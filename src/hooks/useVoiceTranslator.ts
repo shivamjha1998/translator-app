@@ -1,3 +1,4 @@
+import { audioService } from '@/src/services/audio.service';
 import { TranslationDirection } from '@/src/services/openai.service';
 import {
   VoiceTranslationResult,
@@ -11,11 +12,15 @@ import { AppState } from 'react-native';
 
 type ExtendedStatus = VoiceTranslatorStatus | 'error';
 
+// Hard cap for a single session
+const MAX_SESSION_USAGE = 10;
+
 export function useVoiceTranslator() {
   const [status, setStatus] = useState<ExtendedStatus>('idle');
   const [lastResult, setLastResult] = useState<VoiceTranslationResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [direction, setDirection] = useState<TranslationDirection>('auto');
+  const [usageCount, setUsageCount] = useState(0);
 
   // Initialize the recorder with high quality preset
   const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -30,19 +35,14 @@ export function useVoiceTranslator() {
     })();
   }, []);
 
-  // Sync recorder state with our status
   const isRecording = audioRecorder.isRecording;
 
-  // Update internal status based on recorder state
   useEffect(() => {
     if (isRecording) {
       setStatus('recording');
-    } else if (status === 'recording') {
-      // Recorder is stopped
     }
   }, [isRecording]);
 
-  // Listen for AppState changes to reset state when backgrounded
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
       if (nextAppState === 'background') {
@@ -50,10 +50,7 @@ export function useVoiceTranslator() {
         setStatus('idle');
       }
     });
-
-    return () => {
-      subscription.remove();
-    };
+    return () => subscription.remove();
   }, []);
 
   const isBusy = ['transcribing', 'translating', 'speaking'].includes(
@@ -67,10 +64,14 @@ export function useVoiceTranslator() {
       if (isRecording) {
         // STOP RECORDING
         await audioRecorder.stop();
-
         const uri = audioRecorder.uri;
-        if (!uri) {
-            throw new Error("Recording failed: No audio URI found");
+        if (!uri) throw new Error("Recording failed: No audio URI found");
+
+        // Check usage limit
+        if (usageCount >= MAX_SESSION_USAGE) {
+            setStatus('idle');
+            setErrorMessage("Session limit reached (10 translations). Restart app to reset.");
+            return;
         }
 
         setStatus('transcribing');
@@ -78,34 +79,31 @@ export function useVoiceTranslator() {
         // Pass the URI to the service
         const result = await voiceTranslatorService.translateAudio(uri, direction);
 
+        setUsageCount(prev => prev + 1);
         setLastResult(result);
         setStatus('idle');
 
-        // Cleanup: Delete the recording file after processing
+        // Cleanup
         try {
             const file = new File(uri);
-            if (file.exists) {
-                file.delete();
-            }
+            if (file.exists) file.delete();
         } catch (cleanupErr) {
             console.warn("Failed to cleanup recording file", cleanupErr);
         }
 
       } else if (!isBusy) {
         // START RECORDING
+        if (usageCount >= MAX_SESSION_USAGE) {
+            setErrorMessage("Session limit reached. Restart app.");
+            return;
+        }
+
         setLastResult(null);
-
-        await AudioModule.setAudioModeAsync({
-          allowsRecording: true,
-          playsInSilentMode: true,
-        });
-
-        // Prepare and record
+        await AudioModule.setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
         if (audioRecorder.prepareToRecordAsync) {
              await audioRecorder.prepareToRecordAsync(RecordingPresets.HIGH_QUALITY);
         }
         audioRecorder.record();
-
         setStatus('recording');
       }
     } catch (err: any) {
@@ -114,6 +112,17 @@ export function useVoiceTranslator() {
       setErrorMessage(err?.message ?? 'Something went wrong');
     }
   }
+
+  const replayAudio = async () => {
+      if (lastResult?.ttsUri) {
+          try {
+              await audioService.playSound(lastResult.ttsUri);
+          } catch (e) {
+              console.error("Replay failed", e);
+              setErrorMessage("Failed to replay audio");
+          }
+      }
+  };
 
   return {
     status,
@@ -124,5 +133,7 @@ export function useVoiceTranslator() {
     toggleRecording,
     direction,
     setDirection,
+    replayAudio,
+    usageCount,
   };
 }

@@ -15,6 +15,7 @@ export interface VoiceTranslationResult {
   romanized?: string | null;
   inputLang: 'en' | 'ja';
   targetLang: 'en' | 'ja';
+  ttsUri: string;
 }
 
 class VoiceTranslatorService {
@@ -51,6 +52,7 @@ class VoiceTranslatorService {
       romanized: translation.romanized,
       inputLang: translation.inputLang,
       targetLang,
+      ttsUri,
     };
   }
 }
